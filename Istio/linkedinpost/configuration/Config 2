@@ -1,0 +1,65 @@
+# Expose your tcp service outside the mesh. Any incoming traffic on port no 7000 will be routed to this service
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: sms12-virtualservice
+spec:
+  hosts:
+  - "*"
+  tcp:
+  - match:
+    - port: 7000
+    route:
+    - destination:
+        host: sms12.ns1.svc.cluster.local
+        port:
+          number: 22
+
+# Apply this to have authentication policy for istio ingress to verify the Authentication server details
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "sms12auth"
+spec:
+  targets:
+    - name: sms12
+  origins:
+    - jwt:
+        issuer: "testing@secure.istio.io" // issuer name of tenant1 OAUTH server
+        jwksUri: "https://gist.githubusercontent.com/lordofthejars/7dad589384612d7a6e18398ac0f10065/raw/ea0f8e7b729fb1df25d4dc60bf17dee409aad204/jwks.json" // jwks URI of Oauth server
+  principalBinding: USE_ORIGIN
+
+
+## Resource 02 - refer the connectivity table above
+## This configuration is applied to workload's namespace to enable RBAC
+apiVersion: "rbac.istio.io/v1alpha1"
+kind: ClusterRbacConfig
+metadata:
+  name: default
+spec:
+  mode: 'ON_WITH_INCLUSION'
+  inclusion:
+    namespaces: ["default"] // namespace where workload is deployed
+
+## This configuration is applied to workload's namespace
+apiVersion: rbac.istio.io/v1alpha1
+kind: ServiceRole
+metadata:
+  name: sms12role
+spec:
+  rules:
+    - services: ["sms12.ns1.cluster.local"]
+      methods: ["GET"]
+---
+apiVersion: rbac.istio.io/v1alpha1
+kind: ServiceRoleBinding
+metadata:
+  name: sms12rolebinding
+spec:
+  subjects:
+    - user: "usr1"
+      properties:
+        request.auth.claims[role]: "sms12role"
+  roleRef:
+    kind: ServiceRole
+    name: sms12role
