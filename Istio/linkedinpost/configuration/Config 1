@@ -1,0 +1,19 @@
+## Resource 01 - refer the connectivity table in the figure
+## Allow all external connections to reach service "SMS11" on port 443
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: sms11-virtualservice
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - istio-ingress #name of the gateway to be bound. By default, it will be Istio-ingressgateway
+  http:
+  - match:
+	- uri: /sms11service # The prefix used to expose this service outside the mesh
+    route:
+    - destination:
+        host: sms11.svc.cluster.local
+        port:
+          number: 443
