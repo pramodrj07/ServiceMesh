@@ -27,39 +27,33 @@ spec:
     - jwt:
         issuer: "testing@secure.istio.io" // issuer name of tenant1 OAUTH server
         jwksUri: "https://gist.githubusercontent.com/lordofthejars/7dad589384612d7a6e18398ac0f10065/raw/ea0f8e7b729fb1df25d4dc60bf17dee409aad204/jwks.json" // jwks URI of Oauth server
+		audiences:
+        - "sms12.ns1.svc.cluster.local"
+		OriginAuthenticationMethod:
+		- request.auth.user: "usr1"
   principalBinding: USE_ORIGIN
 
-
-## Resource 02 - refer the connectivity table above
-## This configuration is applied to workload's namespace to enable RBAC
-apiVersion: "rbac.istio.io/v1alpha1"
-kind: ClusterRbacConfig
+# Apply the authentication policy per service basis
+# This should applied to the namespace where the microservice is running
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
 metadata:
-  name: default
+  name: "sms12AuthPolicy"
 spec:
-  mode: 'ON_WITH_INCLUSION'
-  inclusion:
-    namespaces: ["default"] // namespace where workload is deployed
-
-## This configuration is applied to workload's namespace
-apiVersion: rbac.istio.io/v1alpha1
-kind: ServiceRole
+  targets:
+  - name: sms12
+  peers:
+  - mtls: {}
+  
+# A destination rule for the same, must be applied on the microservice's namespace
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
 metadata:
-  name: sms12role
+  name: "sms12Dr"
 spec:
-  rules:
-    - services: ["sms12.ns1.cluster.local"]
-      methods: ["GET"]
----
-apiVersion: rbac.istio.io/v1alpha1
-kind: ServiceRoleBinding
-metadata:
-  name: sms12rolebinding
-spec:
-  subjects:
-    - user: "usr1"
-      properties:
-        request.auth.claims[role]: "sms12role"
-  roleRef:
-    kind: ServiceRole
-    name: sms12role
+  host: "sms12.ns1.svc.cluster.local"
+	ports:
+	- number: 22
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
