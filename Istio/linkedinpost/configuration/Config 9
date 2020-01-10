@@ -1,0 +1,60 @@
+# Resource 09 - refer the connectivity table above
+# Expose your tcp service outside the mesh. Any incoming traffic on port no 9000 will be routed to this service
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: sms33-virtualservice
+spec:
+  hosts:
+  - "*"
+  tcp:
+  - match:
+    - port: 9000
+    route:
+    - destination:
+        host: sms33.ns1.svc.cluster.local
+        port:
+          number: 22
+
+# Apply this to have authentication policy for istio ingress to verify the Authentication server details
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "sms33auth"
+spec:
+  targets:
+    - name: sms33
+  origins:
+    - jwt:
+        issuer: "testing@secure.istio.io" // issuer name of tenant1 OAUTH server
+        jwksUri: "https://gist.githubusercontent.com/lordofthejars/7dad589384612d7a6e18398ac0f10065/raw/ea0f8e7b729fb1df25d4dc60bf17dee409aad204/jwks.json" // jwks URI of Oauth server
+		audiences:
+        - "sms33.ns1.svc.cluster.local"
+		OriginAuthenticationMethod:
+		- request.auth.user: "usr2"
+  principalBinding: USE_ORIGIN
+
+# Apply the authentication policy per service basis
+# This should applied to the namespace where the microservice is running
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "sms33AuthPolicy"
+spec:
+  targets:
+  - name: sms33
+  peers:
+  - mtls: {}
+  
+# A destination rule for the same, must be applied on the microservice's namespace
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "sms33Dr"
+spec:
+  host: "sms33.ns1.svc.cluster.local"
+	ports:
+	- number: 22
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
