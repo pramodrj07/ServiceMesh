@@ -1,0 +1,42 @@
+# Resource 05 - refer the connectivity table above
+# Expose your tcp service outside the mesh. Any incoming traffic on port no 8002 will be routed to this service
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: sms23-virtualservice
+spec:
+  hosts:
+  - "*"
+  tcp:
+  - match:
+    - port: 8002
+    route:
+    - destination:
+        host: sms12.ns1.svc.cluster.local
+        port:
+          number: 22
+		  
+# Apply the authentication policy per service basis
+# This should applied to the namespace where the microservice is running
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "sms23AuthPolicy"
+spec:
+  targets:
+  - name: sms23
+  peers:
+  - mtls: {}
+  
+# A destination rule for the same, must be applied on the microservice's namespace
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "sms23Dr"
+spec:
+  host: "sms23.ns1.svc.cluster.local"
+	ports:
+	- number: 22
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
