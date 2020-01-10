@@ -1,0 +1,44 @@
+# Resource 12 - refer the connectivity table abovee
+# Expose your tcp service outside the mesh. Any incoming traffic on port no 12000 will be routed to this service
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: sms51-virtualservice
+spec:
+  hosts:
+  - "*"
+  tcp:
+  - match:
+    - port: 12000
+    route:
+    - destination:
+        host: sms51.ns1.svc.cluster.local
+        port:
+          number: 5000
+		  
+# This is config to disable communication between all microservices in a namespace
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+ name: deny-all
+ namespace: ns1
+spec:
+
+## Authorization policy to restrict the access to only specific microservice
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+ name: sms51
+ namespace: ns1
+spec:
+ selector:
+   matchLabels:
+     app: sms51
+ rules:
+ - from:
+   - source:
+       principals: ["cluster.local/ns/default/sa/dms1"] # This service account must have the services of dms1 deployment
+   to:
+   - operation:
+       methods: ["GET"]
+       paths: ["/*"] # Essentially all API exposed by microservice. Can restrict if APIs are known
