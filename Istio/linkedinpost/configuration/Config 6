@@ -1,0 +1,25 @@
+# Resource 06
+# Apply the authentication policy per service basis
+# This should applied to the namespace where the microservice is running
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "sms31AuthPolicy"
+spec:
+  targets:
+  - name: sms31
+  peers:
+  - mtls: {}
+  
+# A destination rule for the same, must be applied on the microservice's namespace
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "sms31Dr"
+spec:
+  host: "sms31.ns1.svc.cluster.local"
+	ports:
+	- number: 22
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
