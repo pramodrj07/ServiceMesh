@@ -1,0 +1,44 @@
+# Resource 03 - refer the connectivity table above
+# Expose your service outside the mesh. Any incoming traffic on port no 8000 will be routed to this service
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: sms21-virtualservice
+spec:
+  hosts:
+  - "*"
+  tcp:
+  - match:
+    - port: 8000
+    route:
+    - destination:
+        host: sms21.ns1.svc.cluster.local
+        port:
+          number: 2000
+		  
+# This is config to disable communication between all microservices in a namespace
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+ name: deny-all
+ namespace: ns1
+spec:
+
+## Authorization policy to restrict the access to only specific microservice
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+ name: sms21
+ namespace: ns1
+spec:
+ selector:
+   matchLabels:
+     app: sms21
+ rules:
+ - from:
+   - source:
+       principals: ["cluster.local/ns/default/sa/dms1"] # This service account must have the services of dms1 deployment
+   to:
+   - operation:
+       methods: ["GET"]
+       paths: ["/*"] # Essentially all API exposed by microservice. Can restrict if APIs are known
