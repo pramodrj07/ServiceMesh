@@ -1,0 +1,14 @@
+# Resource 08 - refer the connectivity table above
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: e1-serviceentry
+spec:
+  hosts:
+  - E1-FQDN
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: TLS
+  resolution: DNS
