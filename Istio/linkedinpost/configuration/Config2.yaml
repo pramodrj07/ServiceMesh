@@ -32,28 +32,3 @@ spec:
 		OriginAuthenticationMethod:
 		- request.auth.user: "usr1"
   principalBinding: USE_ORIGIN
-
-# Apply the authentication policy per service basis
-# This should applied to the namespace where the microservice is running
-apiVersion: "authentication.istio.io/v1alpha1"
-kind: "Policy"
-metadata:
-  name: "sms12AuthPolicy"
-spec:
-  targets:
-  - name: sms12
-  peers:
-  - mtls: {}
-  
-# A destination rule for the same, must be applied on the microservice's namespace
-apiVersion: "networking.istio.io/v1alpha3"
-kind: "DestinationRule"
-metadata:
-  name: "sms12Dr"
-spec:
-  host: "sms12.ns1.svc.cluster.local"
-	ports:
-	- number: 22
-  trafficPolicy:
-    tls:
-      mode: ISTIO_MUTUAL
